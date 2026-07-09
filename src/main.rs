@@ -1,10 +1,8 @@
 mod color;
 mod ray;
 mod vec3;
-use color::{Color, write_color};
-use console::style;
+use color::Color;
 use image::{ImageBuffer, RgbImage};
-use indicatif::ProgressBar;
 use ray::Ray;
 use vec3::{Point3, Vec3};
 
@@ -18,7 +16,7 @@ fn ray_color(r: &Ray) -> Color {
 fn main() {
     let path = std::path::Path::new("output/book1/image2.png");
     let prefix = path.parent().unwrap();
-
+    std::fs::create_dir_all(prefix).unwrap();
     // Image
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
@@ -30,11 +28,6 @@ fn main() {
     }
 
     let mut img: RgbImage = ImageBuffer::new(image_width as u32, image_height as u32);
-    let progress = if option_env!("CI").unwrap_or_default() == "true" {
-        ProgressBar::hidden()
-    } else {
-        ProgressBar::new((image_height * image_width) as u64)
-    };
 
     // Camera
     let focal_length = 1.0;
@@ -56,9 +49,6 @@ fn main() {
     println!("P3");
     println!("{} {}", image_width, image_height);
     println!("255");
-
-    let stdout = std::io::stdout();
-    let mut handle = stdout.lock();
 
     for j in 0..image_height {
         eprintln!("\rScanlines remaining: {}", image_height - j);

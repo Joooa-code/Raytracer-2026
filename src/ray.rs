@@ -7,6 +7,7 @@ pub struct Ray {
 }
 
 impl Ray {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             orig: Point3::zero(),
@@ -21,6 +22,7 @@ impl Ray {
         }
     }
 
+    #[allow(dead_code)]
     pub fn origin(&self) -> &Point3 {
         &self.orig
     }
@@ -29,6 +31,7 @@ impl Ray {
         &self.dir
     }
 
+    #[allow(dead_code)]
     pub fn at(&self, t: f64) -> Point3 {
         self.orig + t * self.dir
     }
