@@ -1,38 +1,33 @@
 mod color;
+mod hittable;
+mod hittable_list;
 mod ray;
+mod rtweekend;
+mod sphere;
 mod vec3;
 use color::Color;
+use hittable::{HitRecord, Hittable};
+use hittable_list::HittableList;
 use image::{ImageBuffer, RgbImage};
 use ray::Ray;
+use rtweekend::*;
+use sphere::Sphere;
 use vec3::{Point3, Vec3};
 
-fn ray_color(r: &Ray) -> Color {
-    let t = hit_sphere(&Point3::new(0.0, 0.0, -1.0), 0.5, r);
-    if t > 0.0 {
-        let n = Vec3::unit_vector(&(r.at(t) - Vec3::new(0.0, 0.0, -1.0)));
-        return 0.5 * Color::new(n.x() + 1.0, n.y() + 1.0, n.z() + 1.0);
+fn ray_color(r: &Ray, world: &HittableList) -> Color {
+    let mut rec = HitRecord::default();
+    if world.hit(r, 0.0, INFINITY, &mut rec) {
+        return 0.5 * (rec.normal + Color::new(1.0, 1.0, 1.0));
     }
+
     let unit_direction = Vec3::unit_vector(r.direction());
     let a = 0.5 * (unit_direction.y() + 1.0);
 
     (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
 }
 
-fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
-    let oc = *center - *r.origin();
-    let a = Vec3::dot(r.direction(), r.direction());
-    let b = -2.0 * Vec3::dot(r.direction(), &oc);
-    let c = Vec3::dot(&oc, &oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
-    if discriminant < 0.0 {
-        -1.0
-    } else {
-        (-b - discriminant.sqrt()) / (2.0 * a)
-    }
-}
-
 fn main() {
-    let path = std::path::Path::new("output/book1/image4.png");
+    let path = std::path::Path::new("output/book1/image5.png");
     let prefix = path.parent().unwrap();
     std::fs::create_dir_all(prefix).unwrap();
     // Image
@@ -45,6 +40,9 @@ fn main() {
         image_height = 1;
     }
 
+    let mut world = HittableList::new();
+    world.add(Box::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5)));
+    world.add(Box::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0)));
     let mut img: RgbImage = ImageBuffer::new(image_width as u32, image_height as u32);
 
     // Camera
@@ -64,10 +62,6 @@ fn main() {
         camera_center - Vec3::new(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
     let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    println!("P3");
-    println!("{} {}", image_width, image_height);
-    println!("255");
-
     for j in 0..image_height {
         eprintln!("\rScanlines remaining: {}", image_height - j);
         for i in 0..image_width {
@@ -78,12 +72,12 @@ fn main() {
             let r = Ray::from(camera_center, ray_direction);
 
             let pixel = img.get_pixel_mut(i as u32, j as u32);
-            let pixel_color = ray_color(&r);
-            let r = (255.999 * pixel_color.x()) as u8;
-            let g = (255.999 * pixel_color.y()) as u8;
-            let b = (255.999 * pixel_color.z()) as u8;
+            let pixel_color = ray_color(&r, &world);
+            let red = (255.999 * pixel_color.x()) as u8;
+            let green = (255.999 * pixel_color.y()) as u8;
+            let blue = (255.999 * pixel_color.z()) as u8;
 
-            *pixel = image::Rgb([r, g, b]);
+            *pixel = image::Rgb([red, green, blue]);
         }
     }
     eprintln!("\rDone.");
