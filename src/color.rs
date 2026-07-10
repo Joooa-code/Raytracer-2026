@@ -3,10 +3,23 @@ use crate::vec3::Vec3;
 use image::Rgb;
 pub type Color = Vec3;
 
+impl Color {
+    pub fn linear_to_gamma(linear_component: f64) -> f64 {
+        if linear_component > 0.0 {
+            return linear_component.sqrt();
+        }
+        0.0
+    }
+}
+
 pub fn write_color(pixel_color: &Color) -> Rgb<u8> {
-    let r = pixel_color.x();
-    let g = pixel_color.y();
-    let b = pixel_color.z();
+    let mut r = pixel_color.x();
+    let mut g = pixel_color.y();
+    let mut b = pixel_color.z();
+
+    r = Color::linear_to_gamma(r);
+    g = Color::linear_to_gamma(g);
+    b = Color::linear_to_gamma(b);
 
     let intensity = Interval::new(0.000, 0.999);
     let red = (256.0 * intensity.clamp(r)) as u8;
