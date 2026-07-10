@@ -52,7 +52,7 @@ impl Metal {
     pub fn new(albedo: Color, fuzz: f64) -> Self {
         Self {
             albedo,
-            fuzz: fuzz.max(1.0),
+            fuzz: fuzz.min(1.0),
         }
     }
 }
@@ -98,8 +98,15 @@ impl Material for Dielectric {
             self.refraction_index
         };
         let unit_direction = Vec3::unit_vector(r_in.direction());
-        let refracted = Vec3::refract(unit_direction, rec.normal, ri);
-        *scattered = Ray::from(rec.p, refracted);
+        let cos_theta = Vec3::dot(&(-unit_direction), &(rec.normal)).min(1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+        let cannot_refract = ri * sin_theta > 1.0;
+        let direction = if cannot_refract {
+            Vec3::reflect(unit_direction, rec.normal)
+        } else {
+            Vec3::refract(unit_direction, rec.normal, ri)
+        };
+        *scattered = Ray::from(rec.p, direction);
         true
     }
 }
