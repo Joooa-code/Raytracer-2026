@@ -55,7 +55,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &dyn Hittable) {
-        let path = std::path::Path::new("output/book1/image17.png");
+        let path = std::path::Path::new("output/book1/image18.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
