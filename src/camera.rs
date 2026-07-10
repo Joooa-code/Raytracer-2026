@@ -9,7 +9,8 @@ use image::{ImageBuffer, RgbImage};
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: usize,
-    pub samples_per_pixel: usize,
+    pub samples_per_pixel: usize, // Count of random samples for each pixel
+    pub max_depth: usize,         // Maximum number of ray bounces into scene
     image_height: usize,
     pixel_samples_scale: f64,
     center: Point3,
@@ -24,6 +25,7 @@ impl Default for Camera {
             aspect_ratio: 1.0,
             image_width: 100,
             image_height: 0,
+            max_depth: 10,
             samples_per_pixel: 10,
             pixel_samples_scale: 0.0,
             center: Point3::zero(),
@@ -53,7 +55,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &dyn Hittable) {
-        let path = std::path::Path::new("output/book1/image7.png");
+        let path = std::path::Path::new("output/book1/image8.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
@@ -64,7 +66,7 @@ impl Camera {
                 let mut pixel_color = Color::zero();
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
-                    pixel_color += Camera::ray_color(&r, world);
+                    pixel_color += Camera::ray_color(&r, self.max_depth, world);
                 }
                 pixel_color *= self.pixel_samples_scale;
                 let pixel = img.get_pixel_mut(i as u32, j as u32);
@@ -92,11 +94,15 @@ impl Camera {
         Ray::from(ray_origin, ray_direction)
     }
 
-    fn ray_color(r: &Ray, world: &dyn Hittable) -> Color {
+    fn ray_color(r: &Ray, depth: usize, world: &dyn Hittable) -> Color {
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if depth <= 0 {
+            return Color::zero();
+        }
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.0, INFINITY), &mut rec) {
             let direction = Vec3::random_on_hemisphere(&rec.normal);
-            return 0.5 * Camera::ray_color(&Ray::from(rec.p, direction), world);
+            return 0.5 * Camera::ray_color(&Ray::from(rec.p, direction), depth - 1, world);
         }
 
         let unit_direction = Vec3::unit_vector(r.direction());
