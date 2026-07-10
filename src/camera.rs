@@ -96,11 +96,11 @@ impl Camera {
 
     fn ray_color(r: &Ray, depth: usize, world: &dyn Hittable) -> Color {
         // If we've exceeded the ray bounce limit, no more light is gathered.
-        if depth <= 0 {
+        if depth == 0 {
             return Color::zero();
         }
         let mut rec = HitRecord::default();
-        if world.hit(r, Interval::new(0.0, INFINITY), &mut rec) {
+        if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
             let direction = Vec3::random_on_hemisphere(&rec.normal);
             return 0.5 * Camera::ray_color(&Ray::from(rec.p, direction), depth - 1, world);
         }
