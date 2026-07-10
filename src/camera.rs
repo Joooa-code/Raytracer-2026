@@ -3,7 +3,7 @@ use crate::color::Color;
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::ray::Ray;
-use crate::rtweekend::{INFINITY, random_f64};
+use crate::rtweekend::{INFINITY, degrees_to_radians, random_f64};
 use crate::vec3::{Point3, Vec3};
 use image::{ImageBuffer, RgbImage};
 pub struct Camera {
@@ -11,6 +11,7 @@ pub struct Camera {
     pub image_width: usize,
     pub samples_per_pixel: usize, // Count of random samples for each pixel
     pub max_depth: usize,         // Maximum number of ray bounces into scene
+    pub vfov: f64,                // Vertical view angle (field of view)
     image_height: usize,
     pixel_samples_scale: f64,
     center: Point3,
@@ -26,6 +27,7 @@ impl Default for Camera {
             image_width: 100,
             image_height: 0,
             max_depth: 10,
+            vfov: 90.0,
             samples_per_pixel: 10,
             pixel_samples_scale: 0.0,
             center: Point3::zero(),
@@ -43,7 +45,9 @@ impl Camera {
         }
         self.pixel_samples_scale = 1.0 / self.samples_per_pixel as f64;
         let focal_length = 1.0;
-        let viewport_height = 2.0;
+        let theta = degrees_to_radians(self.vfov);
+        let h = (theta / 2.0).tan();
+        let viewport_height = 2.0 * h * focal_length;
         let viewport_width = viewport_height * (self.image_width as f64 / self.image_height as f64);
         let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
         let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
@@ -55,7 +59,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &dyn Hittable) {
-        let path = std::path::Path::new("output/book1/image18.png");
+        let path = std::path::Path::new("output/book1/image19.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
