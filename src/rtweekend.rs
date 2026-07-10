@@ -10,7 +10,7 @@ pub fn degrees_to_radians(degrees: f64) -> f64 {
 pub fn random_f64() -> f64 {
     rand::rng().random::<f64>()
 }
- #[allow(dead_code)]
+#[allow(dead_code)]
 pub fn random_f64_range(min: f64, max: f64) -> f64 {
     rand::rng().random_range(min..max)
 }
