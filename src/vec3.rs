@@ -30,15 +30,10 @@ impl Vec3 {
         self.length_squared().sqrt()
     }
 
-    pub fn random() -> Self {
-        Self::new(random_f64(), random_f64(), random_f64())
-    }
-    pub fn random_range(min: f64, max: f64) -> Self {
-        Self::new(
-            random_f64_range(min, max),
-            random_f64_range(min, max),
-            random_f64_range(min, max),
-        )
+    // Return true if the vector is close to zero in all dimensions.
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        self.e[0].abs() < s && self.e[1].abs() < s && self.e[2].abs() < s
     }
 }
 pub type Point3 = Vec3;
@@ -180,5 +175,18 @@ impl Vec3 {
         } else {
             -on_unit_sphere
         }
+    }
+    pub fn random() -> Self {
+        Self::new(random_f64(), random_f64(), random_f64())
+    }
+    pub fn random_range(min: f64, max: f64) -> Self {
+        Self::new(
+            random_f64_range(min, max),
+            random_f64_range(min, max),
+            random_f64_range(min, max),
+        )
+    }
+    pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+        v - 2.0 * Vec3::dot(&v, &n) * n
     }
 }

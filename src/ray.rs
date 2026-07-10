@@ -7,7 +7,6 @@ pub struct Ray {
 }
 
 impl Ray {
-    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             orig: Point3::zero(),

@@ -1,12 +1,16 @@
+use crate::color::Color;
 use crate::interval::Interval;
+use crate::material::{Lambertian, Material};
 use crate::ray::Ray;
 use crate::vec3::{Point3, Vec3};
 use std::default::Default;
+use std::sync::Arc;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct HitRecord {
     pub p: Point3,
     pub normal: Vec3,
+    pub mat: Arc<dyn Material>,
     pub t: f64,
     pub front_face: bool,
 }
@@ -29,6 +33,7 @@ impl Default for HitRecord {
         Self {
             p: Point3::zero(),
             normal: Vec3::zero(),
+            mat: Arc::new(Lambertian::new(Color::zero())),
             t: 0.0,
             front_face: false,
         }
