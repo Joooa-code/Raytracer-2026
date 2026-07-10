@@ -55,7 +55,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &dyn Hittable) {
-        let path = std::path::Path::new("output/book1/image10.png");
+        let path = std::path::Path::new("output/book1/image11.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
@@ -102,7 +102,7 @@ impl Camera {
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
             let direction = rec.normal + Vec3::random_unit_vector();
-            return 0.5 * Camera::ray_color(&Ray::from(rec.p, direction), depth - 1, world);
+            return 0.7 * Camera::ray_color(&Ray::from(rec.p, direction), depth - 1, world);
         }
 
         let unit_direction = Vec3::unit_vector(r.direction());
