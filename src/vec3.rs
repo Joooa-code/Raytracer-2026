@@ -1,5 +1,5 @@
+use crate::rtweekend::{random_f64, random_f64_range};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
-
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
     e: [f64; 3],
@@ -9,7 +9,6 @@ impl Vec3 {
     pub fn new(e0: f64, e1: f64, e2: f64) -> Self {
         Self { e: [e0, e1, e2] }
     }
-
     pub fn zero() -> Self {
         Self { e: [0.0, 0.0, 0.0] }
     }
@@ -29,6 +28,17 @@ impl Vec3 {
     }
     pub fn length(&self) -> f64 {
         self.length_squared().sqrt()
+    }
+
+    pub fn random() -> Self {
+        Self::new(random_f64(), random_f64(), random_f64())
+    }
+    pub fn random_range(min: f64, max: f64) -> Self {
+        Self::new(
+            random_f64_range(min, max),
+            random_f64_range(min, max),
+            random_f64_range(min, max),
+        )
     }
 }
 pub type Point3 = Vec3;
@@ -152,5 +162,23 @@ impl Vec3 {
     // unit vector
     pub fn unit_vector(v: &Vec3) -> Vec3 {
         *v / v.length()
+    }
+    // generate random unit vector
+    pub fn random_unit_vector() -> Vec3 {
+        loop {
+            let p = Vec3::random_range(-1.0, 1.0);
+            let lensq = p.length_squared();
+            if 1e-160 < lensq && lensq <= 1.0 {
+                return p / lensq.sqrt();
+            }
+        }
+    }
+    pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
+        let on_unit_sphere = Vec3::random_unit_vector();
+        if Vec3::dot(&on_unit_sphere, normal) > 0.0 {
+            on_unit_sphere
+        } else {
+            -on_unit_sphere
+        }
     }
 }
