@@ -4,6 +4,7 @@ use crate::vec3::{Point3, Vec3};
 pub struct Ray {
     orig: Point3,
     dir: Vec3,
+    tm: f64, // the exact time for each ray
 }
 
 impl Ray {
@@ -11,14 +12,12 @@ impl Ray {
         Self {
             orig: Point3::zero(),
             dir: Vec3::zero(),
+            tm: 0.0,
         }
     }
 
-    pub fn from(origin: Point3, direction: Vec3) -> Self {
-        Self {
-            orig: origin,
-            dir: direction,
-        }
+    pub fn from(orig: Point3, dir: Vec3, tm: f64) -> Self {
+        Self { orig, dir, tm }
     }
 
     #[allow(dead_code)]
@@ -30,8 +29,11 @@ impl Ray {
         &self.dir
     }
 
-    #[allow(dead_code)]
     pub fn at(&self, t: f64) -> Point3 {
         self.orig + t * self.dir
+    }
+
+    pub fn time(&self) -> f64 {
+        self.tm
     }
 }

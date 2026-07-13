@@ -85,7 +85,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &dyn Hittable) {
-        let path = std::path::Path::new("output/book1/image23.png");
+        let path = std::path::Path::new("output/book2/image1.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
@@ -125,8 +125,9 @@ impl Camera {
             self.defocus_disk_sample()
         };
 
+        let ray_time = random_f64();
         let ray_direction = pixel_sample - ray_origin;
-        Ray::from(ray_origin, ray_direction)
+        Ray::from(ray_origin, ray_direction, ray_time)
     }
     fn ray_color(r: &Ray, depth: usize, world: &dyn Hittable) -> Color {
         // If we've exceeded the ray bounce limit, no more light is gathered.
