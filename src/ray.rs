@@ -8,7 +8,7 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub fn new() -> Self {
+    pub fn default() -> Self {
         Self {
             orig: Point3::zero(),
             dir: Vec3::zero(),
@@ -16,7 +16,7 @@ impl Ray {
         }
     }
 
-    pub fn from(orig: Point3, dir: Vec3, tm: f64) -> Self {
+    pub fn new(orig: Point3, dir: Vec3, tm: f64) -> Self {
         Self { orig, dir, tm }
     }
 

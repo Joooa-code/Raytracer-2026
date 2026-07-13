@@ -2,27 +2,32 @@ use crate::color::Color;
 use crate::hittable::HitRecord;
 use crate::ray::Ray;
 use crate::rtweekend;
+use crate::texture::{SolidColor, Texture};
 use crate::vec3::Vec3;
+use std::sync::Arc;
 
-pub trait Material {
+pub trait Material: Send + Sync {
     fn scatter(
         &self,
         _r_in: &Ray,
         _rec: &HitRecord,
         _attenuation: &mut Color,
         _scattered: &mut Ray,
-    ) -> bool {
-        false
-    }
+    ) -> bool;
 }
 
 pub struct Lambertian {
-    albedo: Color, // 反射率
+    tex: Arc<dyn Texture>,
 }
 
 impl Lambertian {
-    pub fn new(albedo: Color) -> Self {
-        Self { albedo }
+    pub fn new(tex: Arc<dyn Texture>) -> Self {
+        Self { tex }
+    }
+    pub fn new_color(albedo: Color) -> Self {
+        Self {
+            tex: Arc::new(SolidColor::new(albedo)),
+        }
     }
 }
 
@@ -38,8 +43,8 @@ impl Material for Lambertian {
         if scatter_direction.near_zero() {
             scatter_direction = rec.normal;
         }
-        *scattered = Ray::from(rec.p, scatter_direction, r_in.time());
-        *attenuation = self.albedo;
+        *scattered = Ray::new(rec.p, scatter_direction, r_in.time());
+        *attenuation = self.tex.value(rec.u, rec.v, &rec.p);
         true
     }
 }
@@ -69,7 +74,7 @@ impl Material for Metal {
     ) -> bool {
         let mut reflected = Vec3::reflect(*r_in.direction(), rec.normal);
         reflected = Vec3::unit_vector(&reflected) + (self.fuzz * Vec3::random_unit_vector());
-        *scattered = Ray::from(rec.p, reflected, r_in.time());
+        *scattered = Ray::new(rec.p, reflected, r_in.time());
         *attenuation = self.albedo; // 衰减
         Vec3::dot(scattered.direction(), &rec.normal) > 0.0
     }
@@ -117,7 +122,7 @@ impl Material for Dielectric {
             } else {
                 Vec3::refract(unit_direction, rec.normal, ri)
             };
-        *scattered = Ray::from(rec.p, direction, r_in.time());
+        *scattered = Ray::new(rec.p, direction, r_in.time());
         true
     }
 }

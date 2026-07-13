@@ -1,3 +1,5 @@
+mod aabb;
+mod bvh;
 mod camera;
 mod color;
 mod hittable;
@@ -7,23 +9,31 @@ mod material;
 mod ray;
 mod rtweekend;
 mod sphere;
+mod texture;
 mod vec3;
+use bvh::BVHNode;
 use camera::Camera;
 use color::Color;
+use hittable::Hittable;
 use hittable_list::HittableList;
 use material::{Dielectric, Lambertian, Metal};
 use rtweekend::{random_f64, random_f64_range};
 use sphere::Sphere;
 use std::sync::Arc;
+use texture::CheckerTexture;
 use vec3::{Point3, Vec3};
 
 fn main() {
-    let mut world = HittableList::new();
-    let ground_material = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
-    world.add(Box::new(Sphere::new(
+    let mut world = HittableList::default();
+    let checker = Arc::new(CheckerTexture::new_color(
+        0.32,
+        &Color::new(0.2, 0.3, 0.1),
+        &Color::new(0.9, 0.9, 0.9),
+    ));
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        ground_material.clone(),
+        Arc::new(Lambertian::new(checker)),
     )));
     for a in -11..11 {
         for b in -11..11 {
@@ -37,9 +47,9 @@ fn main() {
                 if choose_mat < 0.8 {
                     // diffuse
                     let albedo = Color::random() * Color::random();
-                    let sphere_material = Arc::new(Lambertian::new(albedo));
+                    let sphere_material = Arc::new(Lambertian::new_color(albedo));
                     let center2 = center + Vec3::new(0.0, random_f64_range(0.0, 0.5), 0.0);
-                    world.add(Box::new(Sphere::new_mov(
+                    world.add(Arc::new(Sphere::new_mov(
                         center,
                         center2,
                         0.2,
@@ -50,33 +60,36 @@ fn main() {
                     let albedo = Color::random_range(0.5, 1.0);
                     let fuzz = random_f64_range(0.0, 0.5);
                     let sphere_material = Arc::new(Metal::new(albedo, fuzz));
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                    world.add(Arc::new(Sphere::new(center, 0.2, sphere_material)));
                 } else {
                     // glass
                     let sphere_material = Arc::new(Dielectric::new(1.5));
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                    world.add(Arc::new(Sphere::new(center, 0.2, sphere_material)));
                 }
             }
         }
     }
     let material1 = Arc::new(Dielectric::new(1.5));
-    world.add(Box::new(Sphere::new(
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
         1.0,
         material1,
     )));
-    let material2 = Arc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
-    world.add(Box::new(Sphere::new(
+    let material2 = Arc::new(Lambertian::new_color(Color::new(0.4, 0.2, 0.1)));
+    world.add(Arc::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         material2,
     )));
     let material3 = Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
-    world.add(Box::new(Sphere::new(
+    world.add(Arc::new(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,
         material3,
     )));
+    let object_len = world.objects.len();
+    let world: Arc<dyn Hittable + Send + Sync> =
+        Arc::new(BVHNode::new(&mut world.objects, 0, object_len));
     let mut cam = Camera::default();
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;

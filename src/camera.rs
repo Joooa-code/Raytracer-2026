@@ -6,6 +6,7 @@ use crate::ray::Ray;
 use crate::rtweekend::{INFINITY, degrees_to_radians, random_f64};
 use crate::vec3::{Point3, Vec3};
 use image::{ImageBuffer, RgbImage};
+use std::sync::Arc;
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: usize,
@@ -84,8 +85,8 @@ impl Camera {
         self.defocus_disk_v = self.v * defocus_radius;
     }
 
-    pub fn render(&mut self, world: &dyn Hittable) {
-        let path = std::path::Path::new("output/book2/image1.png");
+    pub fn render(&mut self, world: &Arc<dyn Hittable + Send + Sync>) {
+        let path = std::path::Path::new("output/book2/image2.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
@@ -96,7 +97,7 @@ impl Camera {
                 let mut pixel_color = Color::zero();
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
-                    pixel_color += Camera::ray_color(&r, self.max_depth, world);
+                    pixel_color += Camera::ray_color(&r, self.max_depth, world.as_ref());
                 }
                 pixel_color *= self.pixel_samples_scale;
                 let pixel = img.get_pixel_mut(i as u32, j as u32);
@@ -127,7 +128,7 @@ impl Camera {
 
         let ray_time = random_f64();
         let ray_direction = pixel_sample - ray_origin;
-        Ray::from(ray_origin, ray_direction, ray_time)
+        Ray::new(ray_origin, ray_direction, ray_time)
     }
     fn ray_color(r: &Ray, depth: usize, world: &dyn Hittable) -> Color {
         // If we've exceeded the ray bounce limit, no more light is gathered.
@@ -136,7 +137,7 @@ impl Camera {
         }
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            let mut scattered = Ray::new();
+            let mut scattered = Ray::default();
             let mut attenuation = Color::zero();
             if rec.mat.scatter(r, &rec, &mut attenuation, &mut scattered) {
                 return attenuation * Camera::ray_color(&scattered, depth - 1, world);
