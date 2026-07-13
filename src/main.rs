@@ -23,17 +23,13 @@ use std::sync::Arc;
 use texture::CheckerTexture;
 use vec3::{Point3, Vec3};
 
-fn main() {
+fn bouncing_spheres() {
     let mut world = HittableList::default();
-    let checker = Arc::new(CheckerTexture::new_color(
-        0.32,
-        &Color::new(0.2, 0.3, 0.1),
-        &Color::new(0.9, 0.9, 0.9),
-    ));
+    let ground_material = Arc::new(Lambertian::new_color(Color::new(0.5, 0.5, 0.5)));
     world.add(Arc::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Arc::new(Lambertian::new(checker)),
+        ground_material,
     )));
     for a in -11..11 {
         for b in -11..11 {
@@ -103,4 +99,56 @@ fn main() {
     cam.defocus_angle = 0.6;
     cam.focus_dist = 10.0;
     cam.render(&world);
+}
+
+fn checkered_spheres() {
+    let mut world = HittableList::default();
+
+    let checker = Arc::new(CheckerTexture::new_color(
+        0.32,
+        &Color::new(0.2, 0.3, 0.1),
+        &Color::new(0.9, 0.9, 0.9),
+    ));
+
+    let material = Arc::new(Lambertian::new(checker.clone()));
+
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0.0, -10.0, 0.0),
+        10.0,
+        material.clone(),
+    )));
+
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0.0, 10.0, 0.0),
+        10.0,
+        material,
+    )));
+
+    let mut cam = Camera::default();
+
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+
+    cam.vfov = 20.0;
+    cam.lookfrom = Point3::new(13.0, 2.0, 3.0);
+    cam.lookat = Point3::new(0.0, 0.0, 0.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+
+    cam.defocus_angle = 0.0;
+
+    let object_len = world.objects.len();
+    let world: Arc<dyn Hittable + Send + Sync> =
+        Arc::new(BVHNode::new(&mut world.objects, 0, object_len));
+    cam.render(&world);
+}
+fn main() {
+    let scene = 2;
+
+    match scene {
+        1 => bouncing_spheres(),
+        2 => checkered_spheres(),
+        _ => {}
+    }
 }
