@@ -7,6 +7,7 @@ mod hittable_list;
 mod image;
 mod interval;
 mod material;
+mod perlin;
 mod ray;
 mod rtweekend;
 mod sphere;
@@ -21,7 +22,7 @@ use material::{Dielectric, Lambertian, Metal};
 use rtweekend::{random_f64, random_f64_range};
 use sphere::Sphere;
 use std::sync::Arc;
-use texture::{CheckerTexture, ImageTexture};
+use texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use vec3::{Point3, Vec3};
 
 fn bouncing_spheres() {
@@ -164,13 +165,39 @@ fn earth() {
     let world: Arc<dyn Hittable + Send + Sync> = Arc::new(world);
     cam.render(&world);
 }
+
+fn perlin_spheres() {
+    let mut world = HittableList::default();
+    let pertext = Arc::new(NoiseTexture::default());
+    let m = Arc::new(Lambertian::new(pertext));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        m.clone(),
+    )));
+    world.add(Arc::new(Sphere::new(Point3::new(0.0, 2.0, 0.0), 2.0, m)));
+    let mut cam = Camera::default();
+
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+    cam.vfov = 20.0;
+    cam.lookfrom = Point3::new(13.0, 2.0, 3.0);
+    cam.lookat = Point3::new(0.0, 0.0, 0.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+    cam.defocus_angle = 0.0;
+    let world: Arc<dyn Hittable + Send + Sync> = Arc::new(world);
+    cam.render(&world);
+}
 fn main() {
-    let scene = 3;
+    let scene = 4;
 
     match scene {
         1 => bouncing_spheres(),
         2 => checkered_spheres(),
         3 => earth(),
+        4 => perlin_spheres(),
         _ => {}
     }
 }
