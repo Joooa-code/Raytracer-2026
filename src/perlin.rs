@@ -1,9 +1,8 @@
-use crate::rtweekend::{random_f64, random_i32};
-use crate::vec3::Point3;
+use crate::rtweekend::random_i32;
+use crate::vec3::{Point3, Vec3};
 
 pub struct Perlin {
-    randfloat: [f64; 256],
-
+    randvec: [Vec3; 256],
     perm_x: [i32; 256],
     perm_y: [i32; 256],
     perm_z: [i32; 256],
@@ -11,13 +10,12 @@ pub struct Perlin {
 
 impl Perlin {
     pub fn new() -> Self {
-        let mut randfloat = [0.0; 256];
+        let mut randvec = [Vec3::zero(); 256];
 
         #[allow(clippy::needless_range_loop)]
         for i in 0..256 {
-            randfloat[i] = random_f64();
+            randvec[i] = Vec3::unit_vector(&Vec3::random_range(-1.0, 1.0));
         }
-
         let mut perm_x = [0; 256];
         let mut perm_y = [0; 256];
         let mut perm_z = [0; 256];
@@ -26,7 +24,7 @@ impl Perlin {
         Perlin::generate_perm(&mut perm_y);
         Perlin::generate_perm(&mut perm_z);
         Self {
-            randfloat,
+            randvec,
             perm_x,
             perm_y,
             perm_z,
@@ -34,18 +32,15 @@ impl Perlin {
     }
 
     pub fn noise(&self, p: &Point3) -> f64 {
-        let mut u = p.x() - p.x().floor();
-        let mut v = p.y() - p.y().floor();
-        let mut w = p.z() - p.z().floor();
-        u = u * u * (3.0 - 2.0 * u);
-        v = v * v * (3.0 - 2.0 * v);
-        w = w * w * (3.0 - 2.0 * w);
+        let u = p.x() - p.x().floor();
+        let v = p.y() - p.y().floor();
+        let w = p.z() - p.z().floor();
 
         let i = p.x().floor() as i32;
         let j = p.y().floor() as i32;
         let k = p.z().floor() as i32;
 
-        let mut c = [[[0.0; 2]; 2]; 2];
+        let mut c = [[[Vec3::zero(); 2]; 2]; 2];
         #[allow(clippy::needless_range_loop)]
         for di in 0..2 {
             for dj in 0..2 {
@@ -53,11 +48,11 @@ impl Perlin {
                     let index = self.perm_x[((i + di as i32) & 255) as usize]
                         ^ self.perm_y[((j + dj as i32) & 255) as usize]
                         ^ self.perm_z[((k + dk as i32) & 255) as usize];
-                    c[di][dj][dk] = self.randfloat[index as usize];
+                    c[di][dj][dk] = self.randvec[index as usize];
                 }
             }
         }
-        Perlin::trilinear_interp(c, u, v, w)
+        Perlin::perlin_interp(c, u, v, w)
     }
 
     fn generate_perm(p: &mut [i32; 256]) {
@@ -75,16 +70,20 @@ impl Perlin {
         }
     }
 
-    fn trilinear_interp(c: [[[f64; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+    fn perlin_interp(c: [[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+        let uu = u * u * (3.0 - 2.0 * u);
+        let vv = v * v * (3.0 - 2.0 * v);
+        let ww = w * w * (3.0 - 2.0 * w);
         let mut accum = 0.0;
         #[allow(clippy::needless_range_loop)]
         for i in 0..2 {
             for j in 0..2 {
                 for k in 0..2 {
-                    let weight_u = if i == 1 { u } else { 1.0 - u };
-                    let weight_v = if j == 1 { v } else { 1.0 - v };
-                    let weight_w = if k == 1 { w } else { 1.0 - w };
-                    accum += weight_u * weight_v * weight_w * c[i][j][k];
+                    let weight_v = Vec3::new(u - i as f64, v - j as f64, w - k as f64);
+                    accum += (i as f64 * uu + (1 - i) as f64 * (1.0 - uu))
+                        * (j as f64 * vv + (1 - j) as f64 * (1.0 - vv))
+                        * (k as f64 * ww + (1 - k) as f64 * (1.0 - ww))
+                        * Vec3::dot(&c[i][j][k], &weight_v);
                 }
             }
         }
