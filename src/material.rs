@@ -3,6 +3,7 @@ use crate::hittable::HitRecord;
 use crate::ray::Ray;
 use crate::rtweekend;
 use crate::texture::{SolidColor, Texture};
+use crate::vec3::Point3;
 use crate::vec3::Vec3;
 use std::sync::Arc;
 
@@ -14,6 +15,10 @@ pub trait Material: Send + Sync {
         _attenuation: &mut Color,
         _scattered: &mut Ray,
     ) -> bool;
+
+    fn emitted(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
+        Color::zero()
+    }
 }
 
 pub struct Lambertian {
@@ -83,7 +88,6 @@ impl Material for Metal {
 pub struct Dielectric {
     refraction_index: f64,
 }
-
 impl Dielectric {
     #[allow(dead_code)]
     pub fn new(refraction_index: f64) -> Self {
@@ -97,7 +101,6 @@ impl Dielectric {
         r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
     }
 }
-
 impl Material for Dielectric {
     fn scatter(
         &self,
@@ -124,5 +127,34 @@ impl Material for Dielectric {
             };
         *scattered = Ray::new(rec.p, direction, r_in.time());
         true
+    }
+}
+
+pub struct DiffuseLight {
+    tex: Arc<dyn Texture + Send + Sync>,
+}
+impl DiffuseLight {
+    #[allow(dead_code)]
+    pub fn new(tex: Arc<dyn Texture + Send + Sync>) -> Self {
+        Self { tex }
+    }
+    pub fn new_color(color: Color) -> Self {
+        Self {
+            tex: Arc::new(SolidColor::new(color)),
+        }
+    }
+}
+impl Material for DiffuseLight {
+    fn scatter(
+        &self,
+        _r_in: &Ray,
+        _rec: &HitRecord,
+        _attenuation: &mut Color,
+        _scattered: &mut Ray,
+    ) -> bool {
+        false
+    }
+    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+        self.tex.value(u, v, p)
     }
 }

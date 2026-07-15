@@ -19,7 +19,7 @@ use camera::Camera;
 use color::Color;
 use hittable::Hittable;
 use hittable_list::HittableList;
-use material::{Dielectric, Lambertian, Metal};
+use material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use quad::Quad;
 use rtweekend::{random_f64, random_f64_range};
 use sphere::Sphere;
@@ -95,6 +95,7 @@ fn bouncing_spheres() {
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+    cam.background = Color::new(0.70, 0.80, 1.00);
     cam.vfov = 20.0;
     cam.lookfrom = Point3::new(13.0, 2.0, 3.0);
     cam.lookat = Point3::new(0.0, 0.0, 0.0);
@@ -134,7 +135,7 @@ fn checkered_spheres() {
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
-
+    cam.background = Color::new(0.70, 0.80, 1.00);
     cam.vfov = 20.0;
     cam.lookfrom = Point3::new(13.0, 2.0, 3.0);
     cam.lookat = Point3::new(0.0, 0.0, 0.0);
@@ -159,6 +160,7 @@ fn earth() {
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+    cam.background = Color::new(0.70, 0.80, 1.00);
     cam.vfov = 20.0;
     cam.lookfrom = Point3::new(0.0, 0.0, 12.0);
     cam.lookat = Point3::new(0.0, 0.0, 0.0);
@@ -184,6 +186,7 @@ fn perlin_spheres() {
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+    cam.background = Color::new(0.70, 0.80, 1.00);
     cam.vfov = 20.0;
     cam.lookfrom = Point3::new(13.0, 2.0, 3.0);
     cam.lookat = Point3::new(0.0, 0.0, 0.0);
@@ -239,6 +242,7 @@ fn quads() {
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+    cam.background = Color::new(0.70, 0.80, 1.00);
     cam.vfov = 80.0;
     cam.lookfrom = Point3::new(0.0, 0.0, 9.0);
     cam.lookat = Point3::new(0.0, 0.0, 0.0);
@@ -248,8 +252,50 @@ fn quads() {
     cam.render(&world);
 }
 
+pub fn simple_light() {
+    let mut world = HittableList::default();
+    // Perlin noise texture
+    let pertext = Arc::new(NoiseTexture::new(4.0));
+    // ground sphere
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        Arc::new(Lambertian::new(pertext.clone())),
+    )));
+    // small sphere
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0.0, 2.0, 0.0),
+        2.0,
+        Arc::new(Lambertian::new(pertext.clone())),
+    )));
+
+    // light
+    let difflight = Arc::new(DiffuseLight::new_color(Color::new(4.0, 4.0, 4.0)));
+
+    world.add(Arc::new(Quad::new(
+        Point3::new(3.0, 1.0, -2.0),
+        Vec3::new(2.0, 0.0, 0.0),
+        Vec3::new(0.0, 2.0, 0.0),
+        difflight,
+    )));
+
+    let mut cam = Camera::default();
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+    cam.background = Color::zero();
+    cam.vfov = 20.0;
+    cam.lookfrom = Point3::new(26.0, 3.0, 6.0);
+    cam.lookat = Point3::new(0.0, 2.0, 0.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+    cam.defocus_angle = 0.0;
+    let world: Arc<dyn Hittable + Send + Sync> = Arc::new(world);
+    cam.render(&world);
+}
+
 fn main() {
-    let scene = 5;
+    let scene = 6;
 
     match scene {
         1 => bouncing_spheres(),
@@ -257,6 +303,7 @@ fn main() {
         3 => earth(),
         4 => perlin_spheres(),
         5 => quads(),
+        6 => simple_light(),
         _ => {}
     }
 }

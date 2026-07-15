@@ -12,7 +12,8 @@ pub struct Camera {
     pub image_width: usize,
     pub samples_per_pixel: usize, // Count of random samples for each pixel
     pub max_depth: usize,         // Maximum number of ray bounces into scene
-    pub vfov: f64,                // Vertical view angle (field of view)
+    pub background: Color,
+    pub vfov: f64, // Vertical view angle (field of view)
     pub lookfrom: Point3,
     pub lookat: Point3,
     pub vup: Vec3,
@@ -38,6 +39,7 @@ impl Default for Camera {
             image_width: 100,
             image_height: 0,
             max_depth: 10,
+            background: Color::zero(),
             vfov: 90.0,
             defocus_angle: 0.0,
             focus_dist: 10.0,
@@ -86,7 +88,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &Arc<dyn Hittable + Send + Sync>) {
-        let path = std::path::Path::new("output/book2/image16.png");
+        let path = std::path::Path::new("output/book2/image17.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
@@ -97,7 +99,7 @@ impl Camera {
                 let mut pixel_color = Color::zero();
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
-                    pixel_color += Camera::ray_color(&r, self.max_depth, world.as_ref());
+                    pixel_color += self.ray_color(&r, self.max_depth, world.as_ref());
                 }
                 pixel_color *= self.pixel_samples_scale;
                 let pixel = img.get_pixel_mut(i as u32, j as u32);
@@ -130,23 +132,25 @@ impl Camera {
         let ray_direction = pixel_sample - ray_origin;
         Ray::new(ray_origin, ray_direction, ray_time)
     }
-    fn ray_color(r: &Ray, depth: usize, world: &dyn Hittable) -> Color {
+    fn ray_color(&self, r: &Ray, depth: usize, world: &dyn Hittable) -> Color {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if depth == 0 {
             return Color::zero();
         }
         let mut rec = HitRecord::default();
-        if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            let mut scattered = Ray::default();
-            let mut attenuation = Color::zero();
-            if rec.mat.scatter(r, &rec, &mut attenuation, &mut scattered) {
-                return attenuation * Camera::ray_color(&scattered, depth - 1, world);
-            }
-            return Color::zero();
+        if !world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
+            return self.background;
         }
-        let unit_direction = Vec3::unit_vector(r.direction());
-        let a = 0.5 * (unit_direction.y() + 1.0);
-        (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
+        let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
+        let mut scattered = Ray::default();
+        let mut attenuation = Color::zero();
+
+        if !rec.mat.scatter(r, &rec, &mut attenuation, &mut scattered) {
+            return color_from_emission;
+        }
+        let color_from_scatter = attenuation * self.ray_color(&scattered, depth - 1, world);
+
+        color_from_emission + color_from_scatter
     }
     fn defocus_disk_sample(&self) -> Point3 {
         let p = Vec3::random_in_unit_disk();
