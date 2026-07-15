@@ -20,7 +20,6 @@ impl Ray {
         Self { orig, dir, tm }
     }
 
-    #[allow(dead_code)]
     pub fn origin(&self) -> &Point3 {
         &self.orig
     }

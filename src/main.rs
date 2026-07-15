@@ -17,7 +17,7 @@ mod vec3;
 use bvh::BVHNode;
 use camera::Camera;
 use color::Color;
-use hittable::Hittable;
+use hittable::{Hittable, RotateY, Translate};
 use hittable_list::HittableList;
 use material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use quad::Quad;
@@ -343,16 +343,23 @@ fn cornell_box() {
         white.clone(),
     )));
 
-    world.add(Arc::new(Quad::box3d(
-        &Point3::new(130.0, 0.0, 65.0),
-        &Point3::new(295.0, 165.0, 230.0),
+    let box1: Arc<dyn Hittable> = Arc::new(Quad::box3d(
+        &Point3::zero(),
+        &Point3::new(165.0, 330.0, 165.0),
         white.clone(),
-    )));
-    world.add(Arc::new(Quad::box3d(
-        &Point3::new(265.0, 0.0, 295.0),
-        &Point3::new(430.0, 330.0, 460.0),
-        white,
-    )));
+    ));
+    let box1: Arc<dyn Hittable> = Arc::new(RotateY::new(box1, 15.0));
+    let box1: Arc<dyn Hittable> = Arc::new(Translate::new(box1, Vec3::new(265.0, 0.0, 295.0)));
+    world.add(box1);
+
+    let box2: Arc<dyn Hittable> = Arc::new(Quad::box3d(
+        &Point3::zero(),
+        &Point3::new(165.0, 165.0, 165.0),
+        white.clone(),
+    ));
+    let box2: Arc<dyn Hittable> = Arc::new(RotateY::new(box2, -18.0));
+    let box2: Arc<dyn Hittable> = Arc::new(Translate::new(box2, Vec3::new(130.0, 0.0, 65.0)));
+    world.add(box2);
 
     let mut cam = Camera::default();
     cam.aspect_ratio = 1.0;
