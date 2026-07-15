@@ -359,7 +359,7 @@ fn cornell_box() {
 }
 
 fn main() {
-    let scene = 6;
+    let scene = 7;
 
     match scene {
         1 => bouncing_spheres(),
