@@ -271,7 +271,11 @@ pub fn simple_light() {
 
     // light
     let difflight = Arc::new(DiffuseLight::new_color(Color::new(4.0, 4.0, 4.0)));
-
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0.0, 7.0, 0.0),
+        2.0,
+        difflight.clone(),
+    )));
     world.add(Arc::new(Quad::new(
         Point3::new(3.0, 1.0, -2.0),
         Vec3::new(2.0, 0.0, 0.0),
@@ -294,6 +298,66 @@ pub fn simple_light() {
     cam.render(&world);
 }
 
+fn cornell_box() {
+    let mut world = HittableList::default();
+
+    let red = Arc::new(Lambertian::new_color(Color::new(0.65, 0.05, 0.05)));
+    let white = Arc::new(Lambertian::new_color(Color::new(0.73, 0.73, 0.73)));
+    let green = Arc::new(Lambertian::new_color(Color::new(0.12, 0.45, 0.15)));
+    let light = Arc::new(DiffuseLight::new_color(Color::new(15.0, 15.0, 15.0)));
+
+    world.add(Arc::new(Quad::new(
+        Point3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        green,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        red,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(343.0, 554.0, 332.0),
+        Vec3::new(-130.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, -105.0),
+        light,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        white.clone(),
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(555.0, 555.0, 555.0),
+        Vec3::new(-555.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, -555.0),
+        white.clone(),
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(0.0, 0.0, 555.0),
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        white,
+    )));
+
+    let mut cam = Camera::default();
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 600;
+    cam.samples_per_pixel = 200;
+    cam.max_depth = 50;
+    cam.background = Color::zero();
+    cam.vfov = 40.0;
+    cam.lookfrom = Point3::new(278.0, 278.0, -800.0);
+    cam.lookat = Point3::new(278.0, 278.0, 0.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+    cam.defocus_angle = 0.0;
+    let world: Arc<dyn Hittable + Send + Sync> = Arc::new(world);
+    cam.render(&world);
+}
+
 fn main() {
     let scene = 6;
 
@@ -304,6 +368,7 @@ fn main() {
         4 => perlin_spheres(),
         5 => quads(),
         6 => simple_light(),
+        7 => cornell_box(),
         _ => {}
     }
 }
