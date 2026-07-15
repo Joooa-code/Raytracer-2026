@@ -8,6 +8,7 @@ mod image;
 mod interval;
 mod material;
 mod perlin;
+mod quad;
 mod ray;
 mod rtweekend;
 mod sphere;
@@ -19,6 +20,7 @@ use color::Color;
 use hittable::Hittable;
 use hittable_list::HittableList;
 use material::{Dielectric, Lambertian, Metal};
+use quad::Quad;
 use rtweekend::{random_f64, random_f64_range};
 use sphere::Sphere;
 use std::sync::Arc;
@@ -190,14 +192,71 @@ fn perlin_spheres() {
     let world: Arc<dyn Hittable + Send + Sync> = Arc::new(world);
     cam.render(&world);
 }
+
+fn quads() {
+    let mut world = HittableList::default();
+
+    let left_red = Arc::new(Lambertian::new_color(Color::new(1.0, 0.2, 0.2)));
+    let back_green = Arc::new(Lambertian::new_color(Color::new(0.2, 1.0, 0.2)));
+    let right_blue = Arc::new(Lambertian::new_color(Color::new(0.2, 0.2, 1.0)));
+    let upper_orange = Arc::new(Lambertian::new_color(Color::new(1.0, 0.5, 0.0)));
+    let lower_teal = Arc::new(Lambertian::new_color(Color::new(0.2, 0.8, 0.8)));
+
+    world.add(Arc::new(Quad::new(
+        Point3::new(-3.0, -2.0, 5.0),
+        Vec3::new(0.0, 0.0, -4.0),
+        Vec3::new(0.0, 4.0, 0.0),
+        left_red,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(-2.0, -2.0, 0.0),
+        Vec3::new(4.0, 0.0, 0.0),
+        Vec3::new(0.0, 4.0, 0.0),
+        back_green,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(3.0, -2.0, 1.0),
+        Vec3::new(0.0, 0.0, 4.0),
+        Vec3::new(0.0, 4.0, 0.0),
+        right_blue,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(-2.0, 3.0, 1.0),
+        Vec3::new(4.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 4.0),
+        upper_orange,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(-2.0, -3.0, 5.0),
+        Vec3::new(4.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, -4.0),
+        lower_teal,
+    )));
+
+    let mut cam = Camera::default();
+
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+    cam.vfov = 80.0;
+    cam.lookfrom = Point3::new(0.0, 0.0, 9.0);
+    cam.lookat = Point3::new(0.0, 0.0, 0.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+    cam.defocus_angle = 0.0;
+    let world: Arc<dyn Hittable + Send + Sync> = Arc::new(world);
+    cam.render(&world);
+}
+
 fn main() {
-    let scene = 4;
+    let scene = 5;
 
     match scene {
         1 => bouncing_spheres(),
         2 => checkered_spheres(),
         3 => earth(),
         4 => perlin_spheres(),
+        5 => quads(),
         _ => {}
     }
 }

@@ -12,7 +12,9 @@ pub struct Aabb {
 impl Aabb {
     #[allow(dead_code)]
     pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
-        Self { x, y, z }
+        let mut bbox = Self { x, y, z };
+        bbox.pad_to_minimums();
+        bbox
     }
     // empty
     pub fn empty() -> Self {
@@ -23,22 +25,15 @@ impl Aabb {
         }
     }
     pub fn from_points(a: Point3, b: Point3) -> Self {
-        let x = if a.x() <= b.x() {
-            Interval::new(a.x(), b.x())
-        } else {
-            Interval::new(b.x(), a.x())
+        let mut bbox = Self {
+            x: Interval::new(a.x().min(b.x()), a.x().max(b.x())),
+
+            y: Interval::new(a.y().min(b.y()), a.y().max(b.y())),
+
+            z: Interval::new(a.z().min(b.z()), a.z().max(b.z())),
         };
-        let y = if a.y() <= b.y() {
-            Interval::new(a.y(), b.y())
-        } else {
-            Interval::new(b.y(), a.y())
-        };
-        let z = if a.z() <= b.z() {
-            Interval::new(a.z(), b.z())
-        } else {
-            Interval::new(b.z(), a.z())
-        };
-        Self { x, y, z }
+        bbox.pad_to_minimums();
+        bbox
     }
     pub fn from_boxes(box0: &Aabb, box1: &Aabb) -> Self {
         Self {
@@ -96,6 +91,19 @@ impl Aabb {
             1
         } else {
             2
+        }
+    }
+
+    fn pad_to_minimums(&mut self) {
+        let delta = 0.0001;
+        if self.x.size() < delta {
+            self.x = self.x.expand(delta);
+        }
+        if self.y.size() < delta {
+            self.y = self.y.expand(delta);
+        }
+        if self.z.size() < delta {
+            self.z = self.z.expand(delta);
         }
     }
 }
