@@ -1,5 +1,6 @@
 use crate::aabb::Aabb;
 use crate::hittable::{HitRecord, Hittable};
+use crate::hittable_list::HittableList;
 use crate::interval::Interval;
 use crate::material::Material;
 use crate::ray::Ray;
@@ -46,6 +47,59 @@ impl Quad {
         rec.u = a;
         rec.v = b;
         true
+    }
+    pub fn box3d(a: &Point3, b: &Point3, mat: Arc<dyn Material + Send + Sync>) -> HittableList {
+        let mut sides = HittableList::default();
+        let min = Point3::new(a.x().min(b.x()), a.y().min(b.y()), a.z().min(b.z()));
+        let max = Point3::new(a.x().max(b.x()), a.y().max(b.y()), a.z().max(b.z()));
+        let dx = Vec3::new(max.x() - min.x(), 0.0, 0.0);
+        let dy = Vec3::new(0.0, max.y() - min.y(), 0.0);
+        let dz = Vec3::new(0.0, 0.0, max.z() - min.z());
+
+        // front
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x(), min.y(), max.z()),
+            dx,
+            dy,
+            mat.clone(),
+        )));
+        // right
+        sides.add(Arc::new(Quad::new(
+            Point3::new(max.x(), min.y(), max.z()),
+            -dz,
+            dy,
+            mat.clone(),
+        )));
+        // back
+        sides.add(Arc::new(Quad::new(
+            Point3::new(max.x(), min.y(), min.z()),
+            -dx,
+            dy,
+            mat.clone(),
+        )));
+        // left
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x(), min.y(), min.z()),
+            dz,
+            dy,
+            mat.clone(),
+        )));
+        // top
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x(), max.y(), max.z()),
+            dx,
+            -dz,
+            mat.clone(),
+        )));
+        // bottom
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x(), min.y(), min.z()),
+            dx,
+            dz,
+            mat,
+        )));
+
+        sides
     }
 }
 
