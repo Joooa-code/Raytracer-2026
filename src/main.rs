@@ -638,7 +638,7 @@ fn model() {
     cam.render(&world);
 }
 fn main() {
-    let scene = 10;
+    let scene = 7;
 
     match scene {
         1 => bouncing_spheres(),

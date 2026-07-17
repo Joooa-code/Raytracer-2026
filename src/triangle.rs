@@ -47,6 +47,7 @@ impl Hittable for Triangle {
         let s = *r.origin() - self.v0;
         let u = f * Vec3::dot(&s, &h);
 
+        #[allow(clippy::manual_range_contains)]
         if u < 0.0 || u > 1.0 {
             return false; // Intersection is outside the triangle
         }
