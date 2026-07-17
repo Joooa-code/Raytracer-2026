@@ -4,7 +4,7 @@ pub struct RTWImage {
     data: Vec<u8>,
     width: usize,
     height: usize,
-    bytes_per_pixel: usize,
+    bytes_per_pixel: usize,  // Number of bytes per pixel (3 for RGB, 4 for RGBA)
 }
 
 impl Default for RTWImage {

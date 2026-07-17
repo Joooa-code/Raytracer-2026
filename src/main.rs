@@ -8,25 +8,28 @@ mod hittable_list;
 mod image;
 mod interval;
 mod material;
+mod model;
 mod perlin;
 mod quad;
 mod ray;
 mod rtweekend;
 mod sphere;
 mod texture;
+mod triangle;
 mod vec3;
 use bvh::BVHNode;
 use camera::Camera;
 use color::Color;
 use constant_medium::ConstantMedium;
-use hittable::{Hittable, RotateY, Translate};
+use hittable::*;
 use hittable_list::HittableList;
-use material::{Dielectric, DiffuseLight, Lambertian, Metal};
+use material::*;
+use model::load;
 use quad::Quad;
 use rtweekend::{random_f64, random_f64_range};
 use sphere::Sphere;
 use std::sync::Arc;
-use texture::{CheckerTexture, ImageTexture, NoiseTexture};
+use texture::*;
 use vec3::{Point3, Vec3};
 
 fn bouncing_spheres() {
@@ -611,8 +614,31 @@ pub fn final_scene(image_width: usize, samples_per_pixel: usize, max_depth: usiz
 
     cam.render(&world);
 }
+fn model() {
+    let material = Arc::new(Lambertian::new_color(Color::new(0.7, 0.1, 0.1)));
+    let mut world = load("models/Heart.obj", material);
+    let light_material = Arc::new(DiffuseLight::new_color(Color::new(8.0, 8.0, 8.0)));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(60.0, 60.0, -5.0),
+        40.0,
+        light_material,
+    )));
+    let world: Arc<dyn Hittable + Send + Sync> = Arc::new(BVHNode::from_list(&mut world.objects));
+    let mut cam = Camera::default();
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 1500;
+    cam.max_depth = 60;
+    cam.background = Color::new(0.05, 0.05, 0.05);
+    let center = Point3::new(174.7, 130.06, -1.75);
+    cam.lookat = center;
+    cam.lookfrom = Point3::new(54.7, 120.06, -165.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+    cam.vfov = 60.0;
+    cam.render(&world);
+}
 fn main() {
-    let scene = 98;
+    let scene = 10;
 
     match scene {
         1 => bouncing_spheres(),
@@ -624,6 +650,7 @@ fn main() {
         7 => cornell_box(),
         8 => cornell_smoke(),
         9 => final_scene(800, 10000, 40),
+        10 => model(),
         _ => final_scene(400, 250, 4),
     }
 }

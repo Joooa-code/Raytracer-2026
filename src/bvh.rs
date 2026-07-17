@@ -12,6 +12,9 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
+    pub fn from_list(objects: &mut Vec<Arc<dyn Hittable>>) -> Self {
+        BVHNode::new(objects, 0, objects.len())
+    }
     pub fn new(objects: &mut Vec<Arc<dyn Hittable>>, start: usize, end: usize) -> Self {
         let mut bbox = Aabb::empty();
         #[allow(clippy::needless_range_loop)]
