@@ -21,6 +21,8 @@ pub struct Camera {
     pub focus_dist: f64,    // Distance from camera lookfrom point to plane of perfect focus
     image_height: usize,
     pixel_samples_scale: f64,
+    sqrt_spp: usize,     // Square root of number of samples per pixel
+    recip_sqrt_spp: f64, // 1 / sqrt_spp
     center: Point3,
     pixel00_loc: Point3,
     pixel_delta_u: Vec3,
@@ -47,6 +49,8 @@ impl Default for Camera {
             lookat: Point3::new(0.0, 0.0, -1.0),
             vup: Vec3::new(0.0, 1.0, 0.0),
             samples_per_pixel: 10,
+            sqrt_spp: 3,
+            recip_sqrt_spp: 1.0 / 3.0,
             pixel_samples_scale: 0.0,
             center: Point3::zero(),
             pixel00_loc: Point3::zero(),
@@ -66,7 +70,9 @@ impl Camera {
         if self.image_height < 1 {
             self.image_height = 1;
         }
-        self.pixel_samples_scale = 1.0 / self.samples_per_pixel as f64;
+        self.sqrt_spp = (self.samples_per_pixel as f64).sqrt() as usize;
+        self.pixel_samples_scale = 1.0 / ((self.sqrt_spp * self.sqrt_spp) as f64);
+        self.recip_sqrt_spp = 1.0 / self.sqrt_spp as f64;
         self.center = self.lookfrom;
         let theta = degrees_to_radians(self.vfov);
         let h = (theta / 2.0).tan();
@@ -88,7 +94,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &Arc<dyn Hittable + Send + Sync>) {
-        let path = std::path::Path::new("output/book3/image1.png");
+        let path = std::path::Path::new("output/book3/image2.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
@@ -97,9 +103,11 @@ impl Camera {
             eprintln!("\rScanlines remaining: {}", self.image_height - j);
             for i in 0..self.image_width {
                 let mut pixel_color = Color::zero();
-                for _sample in 0..self.samples_per_pixel {
-                    let r = self.get_ray(i, j);
-                    pixel_color += self.ray_color(&r, self.max_depth, world.as_ref());
+                for sj in 0..self.sqrt_spp {
+                    for si in 0..self.sqrt_spp {
+                        let r = self.get_ray(i, j, si, sj);
+                        pixel_color += self.ray_color(&r, self.max_depth, world.as_ref());
+                    }
                 }
                 pixel_color *= self.pixel_samples_scale;
                 let pixel = img.get_pixel_mut(i as u32, j as u32);
@@ -110,15 +118,23 @@ impl Camera {
         img.save(path).expect("Cannot save the image to the file");
     }
 
+    fn sample_square_stratified(&self, s_i: usize, s_j: usize) -> Vec3 {
+        let px = ((s_i as f64 + random_f64()) * self.recip_sqrt_spp) - 0.5;
+        let py = ((s_j as f64 + random_f64()) * self.recip_sqrt_spp) - 0.5;
+
+        Vec3::new(px, py, 0.0)
+    }
+
+    #[allow(dead_code)]
     fn sample_square(&self) -> Vec3 {
         // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
         Vec3::new(random_f64() - 0.5, random_f64() - 0.5, 0.0)
     }
 
-    fn get_ray(&self, i: usize, j: usize) -> Ray {
+    fn get_ray(&self, i: usize, j: usize, s_i: usize, s_j: usize) -> Ray {
         // Construct a camera ray originating from the defocus disk and directed at a randomly
         // sampled point around the pixel location i, j.
-        let offset = self.sample_square();
+        let offset = self.sample_square_stratified(s_i, s_j);
         let pixel_sample = self.pixel00_loc
             + ((i as f64 + offset.x()) * self.pixel_delta_u)
             + ((j as f64 + offset.y()) * self.pixel_delta_v);
