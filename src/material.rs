@@ -21,7 +21,7 @@ pub trait Material: Send + Sync {
         Color::zero()
     }
 
-    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _r_in: &Ray, _rec: &HitRecord, _scattered: &Ray) -> f64 {
         0.0
     }
 }
@@ -58,13 +58,9 @@ impl Material for Lambertian {
         true
     }
 
-    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
         let cos_theta = Vec3::dot(&rec.normal, &Vec3::unit_vector(scattered.direction()));
-        if cos_theta < 0.0 {
-            return 0.0;
-        } else {
-            return cos_theta / PI;
-        }
+        if cos_theta < 0.0 { 0.0 } else { cos_theta / PI }
     }
 }
 
