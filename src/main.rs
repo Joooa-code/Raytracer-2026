@@ -615,30 +615,29 @@ pub fn final_scene(image_width: usize, samples_per_pixel: usize, max_depth: usiz
     cam.render(&world);
 }
 fn model() {
-    let material = Arc::new(Lambertian::new_color(Color::new(0.7, 0.1, 0.1)));
-    let mut world = load("models/Heart.obj", material);
+    let mut world = load("models/cat.obj");
     let light_material = Arc::new(DiffuseLight::new_color(Color::new(8.0, 8.0, 8.0)));
     world.add(Arc::new(Sphere::new(
-        Point3::new(60.0, 60.0, -5.0),
-        40.0,
+        Point3::new(0.0, 0.0, -100.0),
+        100.0,
         light_material,
     )));
     let world: Arc<dyn Hittable + Send + Sync> = Arc::new(BVHNode::from_list(&mut world.objects));
     let mut cam = Camera::default();
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 1500;
-    cam.max_depth = 60;
-    cam.background = Color::new(0.05, 0.05, 0.05);
-    let center = Point3::new(174.7, 130.06, -1.75);
+    cam.samples_per_pixel = 20000;
+    cam.max_depth = 50;
+    cam.background = Color::new(0.75, 0.902, 0.902);
+    let center = Point3::new(0.0, 0.0, 0.0);
     cam.lookat = center;
-    cam.lookfrom = Point3::new(54.7, 120.06, -165.0);
-    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+    cam.lookfrom = Point3::new(80.0, 0.0, 10.0);
+    cam.vup = Vec3::new(0.0, 0.0, 1.0);
     cam.vfov = 60.0;
     cam.render(&world);
 }
 fn main() {
-    let scene = 7;
+    let scene = 10;
 
     match scene {
         1 => bouncing_spheres(),

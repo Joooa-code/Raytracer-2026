@@ -10,13 +10,24 @@ pub struct Triangle {
     pub v0: Point3,
     pub v1: Point3,
     pub v2: Point3,
+    pub uv0: (f64, f64),
+    pub uv1: (f64, f64),
+    pub uv2: (f64, f64),
     pub normal: Vec3,
     pub bbox: Aabb,
     pub mat: Arc<dyn Material + Send + Sync>,
 }
 
 impl Triangle {
-    pub fn new(v0: Point3, v1: Point3, v2: Point3, mat: Arc<dyn Material>) -> Self {
+    pub fn new(
+        v0: Point3,
+        v1: Point3,
+        v2: Point3,
+        uv0: (f64, f64),
+        uv1: (f64, f64),
+        uv2: (f64, f64),
+        mat: Arc<dyn Material>,
+    ) -> Self {
         let normal = Vec3::unit_vector(&Vec3::cross(&(v1 - v0), &(v2 - v0)));
         let box1 = Aabb::from_points(v0, v1);
         let box2 = Aabb::from_points(v1, v2);
@@ -25,6 +36,9 @@ impl Triangle {
             v0,
             v1,
             v2,
+            uv0,
+            uv1,
+            uv2,
             normal,
             mat,
             bbox,
@@ -54,7 +68,10 @@ impl Hittable for Triangle {
 
         let q = Vec3::cross(&s, &edge1);
         let v = f * Vec3::dot(r.direction(), &q);
+        let alpha = 1.0 - u - v;
+        let tex_u = alpha * self.uv0.0 + u * self.uv1.0 + v * self.uv2.0;
 
+        let tex_v = alpha * self.uv0.1 + u * self.uv1.1 + v * self.uv2.1;
         if v < 0.0 || u + v > 1.0 {
             return false; // Intersection is outside the triangle
         }
@@ -69,8 +86,8 @@ impl Hittable for Triangle {
         rec.p = r.at(t);
         rec.mat = self.mat.clone();
         rec.set_face_normal(r, &self.normal);
-        rec.u = u;
-        rec.v = v;
+        rec.u = tex_u;
+        rec.v = tex_v;
 
         true
     }

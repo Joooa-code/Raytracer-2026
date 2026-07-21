@@ -72,12 +72,12 @@ impl Texture for CheckerTexture {
 }
 
 pub struct ImageTexture {
-    image: RTWImage,
+    image: Arc<RTWImage>,
 }
 impl ImageTexture {
     pub fn new(filename: &str) -> Self {
         Self {
-            image: RTWImage::new(filename),
+            image: Arc::new(RTWImage::new(filename)),
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::ray::Ray;
 use crate::rtweekend::{INFINITY, degrees_to_radians, random_f64};
 use crate::vec3::{Point3, Vec3};
 use image::{ImageBuffer, RgbImage};
+use rayon::prelude::*;
 use std::sync::Arc;
 pub struct Camera {
     pub aspect_ratio: f64,
@@ -94,28 +95,39 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &Arc<dyn Hittable + Send + Sync>) {
-        let path = std::path::Path::new("output/book3/image5.png");
+        let path = std::path::Path::new("output/geometry/image2.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
-        let mut img: RgbImage = ImageBuffer::new(self.image_width as u32, self.image_height as u32);
-        for j in 0..self.image_height {
-            eprintln!("\rScanlines remaining: {}", self.image_height - j);
-            for i in 0..self.image_width {
-                let mut pixel_color = Color::zero();
-                for sj in 0..self.sqrt_spp {
-                    for si in 0..self.sqrt_spp {
-                        let r = self.get_ray(i, j, si, sj);
-                        pixel_color += self.ray_color(&r, self.max_depth, world.as_ref());
+        let pixels: Vec<(usize, usize, Color)> = (0..self.image_height)
+            .into_par_iter()
+            .flat_map(|j| {
+                let mut row = Vec::with_capacity(self.image_width);
+
+                for i in 0..self.image_width {
+                    let mut pixel_color = Color::zero();
+                    for sj in 0..self.sqrt_spp {
+                        for si in 0..self.sqrt_spp {
+                            let r = self.get_ray(i, j, si, sj);
+
+                            pixel_color += self.ray_color(&r, self.max_depth, world.as_ref());
+                        }
                     }
+                    pixel_color *= self.pixel_samples_scale;
+                    row.push((i, j, pixel_color));
                 }
-                pixel_color *= self.pixel_samples_scale;
-                let pixel = img.get_pixel_mut(i as u32, j as u32);
-                *pixel = color::write_color(&pixel_color);
-            }
+
+                row
+            })
+            .collect();
+
+        eprintln!("\rDone rendering.");
+        let mut img: RgbImage = ImageBuffer::new(self.image_width as u32, self.image_height as u32);
+        for (i, j, color) in pixels {
+            let pixel = img.get_pixel_mut(i as u32, j as u32);
+            *pixel = color::write_color(&color);
         }
-        eprintln!("\rDone.");
-        img.save(path).expect("Cannot save the image to the file");
+        img.save(path).expect("Cannot save image");
     }
 
     fn sample_square_stratified(&self, s_i: usize, s_j: usize) -> Vec3 {
@@ -163,12 +175,7 @@ impl Camera {
         if !rec.mat.scatter(r, &rec, &mut attenuation, &mut scattered) {
             return color_from_emission;
         }
-        let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
-        let pdf_value = scattering_pdf;
-        let color_from_scatter =
-            (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))
-                / pdf_value;
-
+        let color_from_scatter = attenuation * self.ray_color(&scattered, depth - 1, world);
         color_from_emission + color_from_scatter
     }
     fn defocus_disk_sample(&self) -> Point3 {
