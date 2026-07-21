@@ -6,6 +6,7 @@ use crate::ray::Ray;
 use crate::rtweekend::{INFINITY, degrees_to_radians, random_f64};
 use crate::vec3::{Point3, Vec3};
 use image::{ImageBuffer, RgbImage};
+use std::f64::consts::PI;
 use std::sync::Arc;
 pub struct Camera {
     pub aspect_ratio: f64,
@@ -157,14 +158,17 @@ impl Camera {
         if !world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
             return self.background;
         }
-        let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
         let mut scattered = Ray::default();
         let mut attenuation = Color::zero();
-
+        let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
         if !rec.mat.scatter(r, &rec, &mut attenuation, &mut scattered) {
             return color_from_emission;
         }
-        let color_from_scatter = attenuation * self.ray_color(&scattered, depth - 1, world);
+        let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
+        let pdf_value = 1.0 / (2.0 * PI);
+        let color_from_scatter =
+            (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))
+                / pdf_value;
 
         color_from_emission + color_from_scatter
     }
