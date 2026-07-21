@@ -264,7 +264,7 @@ Return surface color
 loading a cat with origin texture
 
 see in output/geometry/image2.png
-![Heart obj](../output/geometry/image2.png)
+![cat obj](../output/geometry/image2.png)
 
 # PDF Method
 
