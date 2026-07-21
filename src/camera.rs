@@ -94,7 +94,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &Arc<dyn Hittable + Send + Sync>) {
-        let path = std::path::Path::new("output/book3/image2.png");
+        let path = std::path::Path::new("output/book3/image3.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
