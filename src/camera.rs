@@ -6,7 +6,6 @@ use crate::ray::Ray;
 use crate::rtweekend::{INFINITY, degrees_to_radians, random_f64};
 use crate::vec3::{Point3, Vec3};
 use image::{ImageBuffer, RgbImage};
-use std::f64::consts::PI;
 use std::sync::Arc;
 pub struct Camera {
     pub aspect_ratio: f64,
@@ -95,7 +94,7 @@ impl Camera {
     }
 
     pub fn render(&mut self, world: &Arc<dyn Hittable + Send + Sync>) {
-        let path = std::path::Path::new("output/book3/image4.png");
+        let path = std::path::Path::new("output/book3/image5.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).unwrap();
         self.initialize();
@@ -165,7 +164,7 @@ impl Camera {
             return color_from_emission;
         }
         let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
-        let pdf_value = 1.0 / (2.0 * PI);
+        let pdf_value = scattering_pdf;
         let color_from_scatter =
             (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))
                 / pdf_value;
